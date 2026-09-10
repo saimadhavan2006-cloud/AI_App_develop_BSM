@@ -1,0 +1,16 @@
+import math
+
+n1 = int(input("Enter first number: "))
+n2 = int(input("Enter second number: ")) 
+print("addition:", n1+n2)
+print("subtraction:", n1-n2)
+print("multiplication:", n1*n2) 
+print("division:", n1/n2)
+print("modulus:", n1%n2)
+print("exponentiation:", n1**n2)
+print("floor division:", n1//n2)
+print("sine of first number:", math.sin(n1))
+print("cosine of first number:", math.cos(n1))
+print("tangent of first number:", math.tan(n1))
+print("logarithm of second number:", math.log(n2))
+print("square root of sum of two numbers:", math.sqrt(n1 + n2))
