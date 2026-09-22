@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StudentDetails>
+    <StudentInfo>
+            <Name> Madhavan </Name>
+            <Age> 20 </Age>
+            <Ambition> Singer </Ambition>
+    </StudentInfo>
+    <StudentInfo>
+            <Name> Yuvaraj </Name>
+            <Age> 19 </Age>
+            <Ambition> Lover </Ambition>
+    </StudentInfo>
+    <StudentInfo>
+            <Name> Chari </Name>
+            <Age> 20 </Age>
+            <Ambition> Priest </Ambition>
+    </StudentInfo>
+    <StudentInfo>
+            <Name> Thanu </Name>
+            <Age> 20 </Age>
+            <Ambition> Devotee </Ambition>
+    </StudentInfo>
+</StudentDetails>
