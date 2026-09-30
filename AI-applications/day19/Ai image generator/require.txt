@@ -1,0 +1,4 @@
+stream lit
+huggingface hub
+python dotenv
+pillow
