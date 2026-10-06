@@ -1,0 +1,15 @@
+Jawaharlal Nehru Technological University Hyderabad
+minimum attendence criteria: 75%
+library timings: monday to friday 9:30 AM to 11:30 PM, sat-sun: 9:30AM to 4PM
+no.of deptartments in college:6
+names of departments:
+cse: csc,cse-aiml,cse-DS
+ece
+civil
+mechanical
+metallurgy
+biotechnology
+area of the college: 90 to 100 acres approximately
+no of canteens in college: 2
+Placements in college: good level, core companies visit rarely,mostly software and cse based companies visit
+average package: 12 to 20 lpa
