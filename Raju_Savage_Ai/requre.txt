@@ -1,0 +1,9 @@
+streamlit
+requests
+langchain
+langchain-community
+langchain-text-splitters
+chromadb
+sentence-transformers
+torch
+torchvision
