@@ -1,0 +1,37 @@
+UNIVERSITY INFORMATION
+Name: Jawaharlal Nehru Technological University Hyderabad (JNTUH).
+
+ATTENDANCE REQUIREMENT
+The minimum attendance requirement is 75%.
+
+LIBRARY TIMINGS
+Monday to Friday: 9:30 AM to 11:30 PM.
+Saturday and Sunday: 9:30 AM to 4:00 PM.
+
+COLLEGE DEPARTMENTS
+Number of departments: 6.
+
+Departments and specializations:
+1. Computer Science and Engineering (CSE)
+   - CSE
+   - CSE - Artificial Intelligence and Machine Learning (CSE-AIML)
+   - CSE - Data Science (CSE-DS)
+2. Electronics and Communication Engineering (ECE)
+3. Civil Engineering
+4. Mechanical Engineering
+5. Metallurgy
+6. Biotechnology
+
+CAMPUS INFORMATION
+Approximate campus area: 90 to 100 acres.
+Number of canteens: 2.
+
+PLACEMENTS
+Placement overview:
+- Placements are described as being at a good level.
+- Core companies visit the campus rarely.
+- Software and CSE-related companies visit more frequently.
+
+AVERAGE PACKAGE
+Reported average package: 12 to 20 LPA.
+Note: This figure is an approximate range provided in the current knowledge base and has not been independently verified.
