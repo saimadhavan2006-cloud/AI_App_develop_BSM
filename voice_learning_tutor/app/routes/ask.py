@@ -1,13 +1,17 @@
+from multiprocessing import context
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from typing import Literal
 from sqlalchemy.orm import Session
 
+from app.services.rag_service import retrieve_context
 from app.database import SessionLocal
 from app.models import LearningHistory
 from app.services.llm_services import generate_explanation
 
+from app.services.rag_service import retrieve_passages
 router = APIRouter(prefix="/ask", tags=["Tutor"])
 
 
@@ -23,6 +27,7 @@ class AskResponse(BaseModel):
     answer: str
     model: str
     saved_id: int
+    sources: list[dict]
 
 
 def get_db():
@@ -39,11 +44,20 @@ async def ask_tutor(
     db: Session = Depends(get_db)
 ):
     try:
+        context = retrieve_context(request.question, top_k=4)
+        context, sources = retrieve_passages(
+            request.question,
+            top_k=6
+        )
+        print("\n========== RETRIEVED TEXTBOOK PASSAGES ==========")
+        print(context)
+        print("=================================================\n")
         answer = await generate_explanation(
             question=request.question,
             level=request.level,
             language=request.language,
             depth=request.depth,
+            context=context,
         )
 
         record = LearningHistory(
@@ -62,6 +76,7 @@ async def ask_tutor(
             answer=answer,
             model="llama3.2:latest",
             saved_id=record.id,
+            sources=sources,
         )
 
     except httpx.ConnectError:
