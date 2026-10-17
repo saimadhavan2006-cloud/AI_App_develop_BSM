@@ -36,3 +36,6 @@ test_pdf.py
 secrets/
 
 knowledge_base/**/*.pdf
+# ChromaDB vector database and backups
+chroma_db/
+chroma_db_backup/
