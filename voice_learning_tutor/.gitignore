@@ -1,0 +1,38 @@
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+
+# Test and cache files
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated files
+audio_outputs/
+chroma_db/
+*.mp3
+*.wav
+*.log
+
+# OCR test scripts
+test_ocr.py
+test_pdf.py
+
+# Local IDE settings
+.vscode/
+.idea/
+
+# Secrets and credentials
+secrets/
+
+knowledge_base/**/*.pdf
