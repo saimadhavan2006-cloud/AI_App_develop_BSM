@@ -1,75 +1,237 @@
 # REST APIs & FastAPI — VS Code Practice Project
 
-This is a VS Code version of the supplied Google Colab guide. It keeps the guide's beginner task API and its main ideas: routes, path/query parameters, Pydantic models, CRUD, status codes, headers, dependencies, async handlers, tests, and OpenAPI docs.
+A beginner-friendly Python project for learning REST API development with FastAPI. It covers routing, request validation, CRUD operations, HTTP status codes, dependencies, headers, response models, automated testing, and interactive API documentation.
 
-## 1. Open in VS Code
+## Learning Objectives
 
-1. Extract this ZIP.
-2. In VS Code choose **File → Open Folder** and select `rest_fastapi_vscode`.
-3. Install the Microsoft **Python** extension if needed.
-4. Open **Terminal → New Terminal**.
+- Build REST endpoints using FastAPI.
+- Work with path and query parameters.
+- Validate request data using Pydantic models.
+- Implement Create, Read, Update, and Delete (CRUD) operations.
+- Understand HTTP methods and status codes.
+- Handle missing resources and invalid requests.
+- Use request headers and dependency injection.
+- Filter API responses using response models.
+- Write automated tests with FastAPI TestClient.
+- Explore generated OpenAPI documentation.
 
-## 2. Create a virtual environment (Windows PowerShell)
+## Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Python | Application programming language |
+| FastAPI | REST API framework |
+| Pydantic | Request validation and response models |
+| Uvicorn | ASGI development server |
+| pytest | Automated testing |
+| FastAPI TestClient | In-process API testing |
+
+## Project Structure
+
+```text
+rest_fastapi_vscode/
+├── main.py
+├── requirements.txt
+├── README.md
+├── PRACTICE.md
+├── .gitignore
+└── tests/
+    └── test_api.py
+```
+
+## Features and Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/` | Check that the API is responding |
+| GET | `/numbers/{number}` | Validate a number and return its double |
+| GET | `/greet` | Generate a greeting using query parameters |
+| POST | `/tasks` | Create a task |
+| GET | `/tasks` | List tasks, optionally filtered by completion status |
+| GET | `/tasks/{task_id}` | Retrieve a task by ID |
+| PUT | `/tasks/{task_id}` | Replace a task |
+| PATCH | `/tasks/{task_id}` | Update selected task fields |
+| DELETE | `/tasks/{task_id}` | Delete a task |
+| GET | `/profile-demo` | Demonstrate response-model filtering |
+| GET | `/header-demo` | Read an `X-Request-ID` header |
+| GET | `/protected-demo` | Demonstrate dependency-based header checking |
+| GET | `/wait-demo` | Demonstrate an asynchronous endpoint |
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3
+- Visual Studio Code
+- The Microsoft Python extension for VS Code
+
+### 1. Clone the repository
+
+```powershell
+git clone https://github.com/saimadhavan2006-cloud/AI_App_develop_BSM.git
+cd AI_App_develop_BSM/rest_fastapi_vscode/rest_fastapi_vscode
+```
+
+### 2. Create a virtual environment
 
 ```powershell
 py -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -r requirements.txt
 ```
 
-If PowerShell blocks activation, run this only for the current terminal:
+If `py -3` is unavailable, try:
+
+```powershell
+python -m venv .venv
+```
+
+If PowerShell blocks virtual-environment activation, use this for the current terminal only:
+
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
 
-If `py -3` is unavailable, try `python -m venv .venv`.
+### 3. Install dependencies
 
-## 3. Run the API
+```powershell
+python -m pip install -r requirements.txt
+```
+
+### 4. Start the development server
 
 ```powershell
 uvicorn main:app --reload
 ```
 
-Open these URLs in your browser:
-- http://127.0.0.1:8000 — home endpoint
-- http://127.0.0.1:8000/docs — interactive Swagger UI (try requests here)
-- http://127.0.0.1:8000/redoc — alternate API documentation
+Open the following URLs:
+
+- **API root:** http://127.0.0.1:8000/
+- **Swagger UI:** http://127.0.0.1:8000/docs
+- **ReDoc:** http://127.0.0.1:8000/redoc
+
+Swagger UI lets you send requests and inspect responses interactively.
 
 Stop the server with `Ctrl+C`.
 
-## 4. Run automated tests
+## Example Requests
 
-Open a second terminal, activate `.venv` if needed, then run:
-```powershell
-pytest -q
+### Greeting
+
+```http
+GET /greet?name=Asha&loud=true
 ```
-Expected: all tests pass.
 
-## 5. Practice in this order
+Example response:
 
-1. Change the message in `home()` and refresh `/`.
-2. Try `/numbers/7`, `/numbers/abc`, `/numbers/0`.
-3. Try `/greet?name=Asha&loud=true`.
-4. In `/docs`, create a task with `POST /tasks`.
-5. List tasks with `GET /tasks`, then filter with `?done=true` or `?done=false`.
-6. Replace all editable fields with `PUT /tasks/{task_id}`.
-7. Change one field with `PATCH /tasks/{task_id}`.
-8. Delete a task with `DELETE /tasks/{task_id}`. A `204` response has no body.
-9. Try an invalid title, unknown ID, and `limit=0`; inspect the status and error.
-10. Try `/header-demo` with `X-Request-ID: practice-01`.
-11. Try `/protected-demo` with `X-API-Key: practice-key`. This is a demo key only, not real security.
-12. Run `pytest -q` after edits.
+```json
+{
+  "message": "HELLO, ASHA"
+}
+```
 
-## Important learning notes
+### Create a task
 
-- The tasks are stored in a Python dictionary, so they disappear when the app restarts. This is not a database.
-- `TestClient` tests the app in-process; Uvicorn serves real HTTP requests.
-- `GET` reads, `POST` creates, `PUT` replaces, `PATCH` updates selected fields, and `DELETE` removes.
-- `422` usually means validation failed; `404` means the requested task was not found.
-- Restarting the app resets the in-memory task list and ID counter.
+Send a `POST` request to `/tasks`:
 
-## Next challenge
+```json
+{
+  "title": "Learn FastAPI",
+  "done": false
+}
+```
 
-Add an integer `priority` field restricted to 1–3. Update `TaskCreate`, `TaskReplace`, `TaskPatch`, and `TaskOut` consistently. Choose a default, add a filter to `GET /tasks`, and add a test proving priority 4 is rejected.
+The API returns HTTP `201 Created` with the newly created task.
+
+### Filter tasks
+
+```http
+GET /tasks?done=true&limit=5
+```
+
+This retrieves up to five completed tasks.
+
+### Demonstrate request headers
+
+Send a request to `/header-demo` with the header:
+
+```text
+X-Request-ID: practice-01
+```
+
+### Run the protected demo
+
+Send a request to `/protected-demo` with:
+
+```text
+X-API-Key: practice-key
+```
+
+The hardcoded key is for learning dependency injection only. It is not suitable for production authentication or security.
+
+## Data Storage
+
+Tasks are currently stored in a Python dictionary in application memory.
+
+- Data is lost when the application restarts.
+- The ID counter resets when the application restarts.
+- This project does not currently use a database.
+
+Replacing the in-memory dictionary with SQLite is a useful future extension.
+
+## Validation and Error Handling
+
+The API demonstrates several common HTTP responses:
+
+- **200 OK:** A successful read or update.
+- **201 Created:** A task was created.
+- **204 No Content:** A task was deleted successfully.
+- **403 Forbidden:** The protected demo key was missing or incorrect.
+- **404 Not Found:** The requested task does not exist.
+- **422 Unprocessable Content:** Input validation failed.
+
+Pydantic models validate request bodies, while FastAPI validates path and query parameters.
+
+## Automated Testing
+
+Run the test suite from the project directory:
+
+```powershell
+python -m pytest tests/ -v
+```
+
+The current tests cover:
+
+- Home and number endpoints
+- Greeting query parameters
+- Task CRUD operations
+- Input validation and error responses
+- Headers, dependencies, and response-model filtering
+
+The tests use FastAPI TestClient to exercise the application in-process without requiring a separate Uvicorn server.
+
+## Practice Exercises
+
+Use `PRACTICE.md` to work through the learning exercises, including:
+
+- Adding routes and query parameters
+- Improving validation
+- Extending task models with a priority field
+- Testing invalid input
+- Understanding `PUT` versus `PATCH`
+- Exploring database-backed persistence
+
+## Future Improvements
+
+- Add task priority and priority-based filtering.
+- Replace in-memory storage with SQLite.
+- Add pagination and more comprehensive tests.
+- Replace the demo API key with a proper authentication mechanism.
+- Add API configuration and structured logging.
+
+## Author
+
+**B. Sai Madhavan**
+
+Python | FastAPI | REST API Development
