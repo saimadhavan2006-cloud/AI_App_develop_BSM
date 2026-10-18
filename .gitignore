@@ -1,11 +1,34 @@
-# Virtual environment
+# Python virtual environments
 venv/
 .venv/
 env/
 
-# Python cache
+# Python cache and compiled files
 __pycache__/
-*.pyc
+*.py[cod]
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
 
 # IDE settings
 .vscode/
+
+# ChromaDB generated databases
+Rag_chat_bot/chroma_db/
+Rag_chat_bot/chroma_db_backup/
+chroma_db/
+chroma_db_backup/
+
+# Generated audio
+audio_outputs/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
