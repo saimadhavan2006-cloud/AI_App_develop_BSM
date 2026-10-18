@@ -32,3 +32,10 @@ audio_outputs/
 # OS-generated files
 .DS_Store
 Thumbs.db
+
+# Local combined dependency snapshot
+
+# Local SQLite databases
+*.db
+*.sqlite
+*.sqlite3
