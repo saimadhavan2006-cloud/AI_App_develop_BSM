@@ -1,36 +1,20 @@
 # Voice Learning Tutor
 
-An AI-powered learning assistant designed to help students explore academic concepts through text and voice interaction. This project combines a local language model, speech processing, textbook indexing, and a REST API.
+An AI-powered learning assistant that helps students explore academic concepts through text and voice interaction. It combines a local language model, speech processing, textbook indexing, retrieval, and a REST API.
 
 ## Features
 
 - **AI-generated explanations:** Uses Ollama with Llama 3.2.
+- **8051 answer validation:** Checks selected classic 8051 architecture facts and retries generation when validation identifies issues.
 - **Speech recognition:** Uses Faster-Whisper for voice input.
 - **Text-to-speech:** Uses Edge TTS for spoken responses.
 - **REST API:** FastAPI backend with interactive Swagger documentation.
-- **Learning history:** SQLite database integration.
-- **Textbook indexing:** Processes PDF content and creates searchable embeddings.
+- **Learning history:** Stores learning-related data using SQLite.
+- **Textbook indexing:** Extracts PDF content and creates searchable embeddings.
 - **Vector storage:** Uses ChromaDB for indexed knowledge.
-- **OCR support:** Tesseract OCR and PDF image conversion tools support scanned-document processing.
-- **Web interface:** Includes a Streamlit frontend.
-- **Automated tests:** Includes API tests and separate OCR/PDF test scripts.
-
-## Technology Stack
-
-| Component | Technology |
-|---|---|
-| Language | Python |
-| Backend API | FastAPI, Uvicorn |
-| Language model | Ollama, Llama 3.2 |
-| Embeddings | Ollama, `nomic-embed-text` |
-| Speech recognition | Faster-Whisper |
-| Text-to-speech | Edge TTS |
-| Database | SQLite |
-| Vector database | ChromaDB |
-| PDF processing | pypdf, pdf2image |
-| OCR | Tesseract |
-| Frontend | Streamlit |
-| Testing | pytest |
+- **OCR support:** Supports scanned-document processing with Tesseract OCR and PDF image conversion tools.
+- **Web interface:** Provides a Streamlit frontend.
+- **Automated tests:** Includes API, accuracy-validation, and retry tests.
 
 ## Project Structure
 
@@ -40,137 +24,86 @@ voice_learning_tutor/
 │   ├── main.py
 │   ├── database.py
 │   ├── models.py
+│   ├── schemas.py
 │   ├── routes/
 │   └── services/
 ├── frontend/
 │   └── streamlit_app.py
 ├── knowledge_base/
 ├── tests/
-│   └── tests_api.py
+│   ├── test_8051_accuracy.py
+│   ├── test_accuracy_retry.py
+│   ├── test_api.py
+│   └── test_llm_retry.py
 ├── index_textbooks.py
-├── requirement.txt
-├── Readme.md
+├── requirements.txt
+├── README.md
 └── .gitignore
 ```
 
-Local databases, vector indexes, audio outputs, virtual environments, and credentials are excluded from this overview because they are generated or machine-specific files.
+Local databases, vector indexes, generated audio, virtual environments, and credentials are excluded from this overview because they are local or generated artifacts.
 
-## Architecture Overview
+## Installation
 
-1. The frontend provides an interface for interacting with the tutor.
-2. FastAPI exposes backend endpoints.
-3. Ollama generates answers using the configured language model.
-4. Speech recognition and text-to-speech support voice interaction.
-5. SQLite stores learning-related data.
-6. The textbook indexing script extracts document content, generates embeddings, and stores indexed data in ChromaDB.
-
-**RAG status:** Textbook indexing is available in the project. Answers should only be described as textbook-grounded when the retrieval results are actually connected to the answer-generation workflow.
-
-## Getting Started
-
-### Prerequisites
-
-- Python
-- Ollama
-- Git
-- Tesseract OCR and Poppler for scanned-PDF processing
-- The Ollama models used by the application
-
-### 1. Clone the repository
+From the cloned repository, enter the project directory:
 
 ```powershell
-git clone https://github.com/saimadhavan2006-cloud/AI_App_develop_BSM.git
 cd AI_App_develop_BSM/voice_learning_tutor
 ```
 
-### 2. Create a virtual environment
+Create and activate a virtual environment:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 3. Install dependencies
-
-The dependency file is currently named `requirement.txt`.
+Install the project dependencies:
 
 ```powershell
-python -m pip install -r requirement.txt
+python -m pip install -r requirements.txt
 ```
 
-### 4. Start Ollama and download the models
+## Run the application
+
+Start Ollama and make sure the configured models are available:
 
 ```powershell
 ollama pull llama3.2
 ollama pull nomic-embed-text
 ```
 
-Make sure the models match the configuration used in the application.
-
-### 5. Configure environment variables
-
-Create a local `.env` file containing the required configuration. Use the variable names expected by the application.
-
-**Never commit `.env` or API keys to GitHub.** Keep secrets out of source code and screenshots.
-
-### 6. Run the API
-
-From the `voice_learning_tutor` directory:
+Start the FastAPI server:
 
 ```powershell
 python -m uvicorn app.main:app --reload
 ```
 
-If the server starts successfully, open:
+Open `http://127.0.0.1:8000/docs` for the Swagger UI.
 
-- API: http://127.0.0.1:8000
-- Swagger UI: http://127.0.0.1:8000/docs
-
-Check `app/main.py` for the actual health-check route before relying on a health endpoint.
-
-### 7. Run the Streamlit frontend
-
-If the frontend is configured to connect to the API:
+In a separate terminal, activate the same virtual environment and start the frontend:
 
 ```powershell
 streamlit run frontend/streamlit_app.py
 ```
 
-### 8. Index textbooks
-
-Place PDFs you are authorized to process in the configured knowledge-base directory, then run:
-
-```powershell
-python index_textbooks.py
-```
-
-The script's configured paths and dependencies determine which documents are indexed and where the generated vector database is stored.
-
 ## Testing
 
-Run the API tests with:
+Run the automated test suite:
 
 ```powershell
-python -m pytest tests/
+python -m pytest -q
 ```
 
-OCR and PDF test scripts can be run separately when their external dependencies are installed.
+The latest reported test run completed with **21 passed**. Test results may vary as code and dependencies change.
 
 ## Important Notes
 
-- Keep `.env`, virtual environments, local databases, generated audio, and vector indexes out of version control.
-- Tesseract and Poppler require separate installation.
+- Keep `.env`, API keys, local databases, vector indexes, and generated audio out of version control.
+- Tesseract and Poppler require separate installation for applicable OCR/PDF workflows.
 - Edge TTS relies on an online service; Ollama runs locally.
-- Only use textbook files you are authorized to process or redistribute.
-- Rebuild local indexes when necessary instead of committing generated ChromaDB files.
-
-## Future Improvements
-
-- Complete and verify textbook-grounded RAG responses.
-- Add source and page references to textbook answers.
-- Improve frontend integration and error handling.
-- Expand automated tests for voice, retrieval, and database workflows.
-- Add learning quizzes and progress tracking.
+- Only process textbook files you are authorized to use.
+- Rebuild local indexes when necessary rather than committing generated ChromaDB files.
 
 ## Author
 
