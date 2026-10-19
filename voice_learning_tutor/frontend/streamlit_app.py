@@ -137,3 +137,56 @@ if "last_answer" in st.session_state:
                     st.caption(
                         f"Retrieval distance: {distance:.3f}"
                     )
+
+st.divider()
+st.subheader("🎙️ Ask using your voice")
+
+audio_value = st.audio_input("Record your question")
+
+if audio_value is not None:
+    if st.button("🎧 Ask Raaju", type="primary", key="voice_ask"):
+        with st.spinner("Listening and preparing your answer..."):
+            try:
+                response = requests.post(
+                    f"{API_BASE_URL}/voice/ask",
+                    files={
+                        "file": (
+                            "question.wav",
+                            audio_value.getvalue(),
+                            audio_value.type or "audio/wav",
+                        )
+                    },
+                    timeout=(5, 360),
+                )
+                response.raise_for_status()
+                result = response.json()
+
+                st.subheader("📝 Transcribed question")
+                st.write(result.get("transcribed_text") or "No transcription returned.")
+
+                st.subheader("💡 Answer")
+                st.markdown(result.get("answer") or "No answer returned.")
+
+                audio_url = result.get("audio_url")
+                if audio_url:
+                    audio_response = requests.get(
+                        f"{API_BASE_URL}{audio_url}",
+                        timeout=(5, 60),
+                    )
+                    audio_response.raise_for_status()
+                    st.audio(audio_response.content, format="audio/mp3")
+                else:
+                    st.warning("The answer was returned without audio.")
+
+            except requests.exceptions.Timeout:
+                st.error("The voice request timed out. Check the backend and try again.")
+            except requests.exceptions.ConnectionError:
+                st.error("Cannot connect to FastAPI. Make sure the backend is running.")
+            except requests.exceptions.HTTPError as exc:
+                try:
+                    detail = response.json().get("detail", str(exc))
+                except ValueError:
+                    detail = str(exc)
+                st.error(f"Backend error: {detail}")
+            except (ValueError, KeyError) as exc:
+                st.error(f"Could not process the voice response: {exc}")
