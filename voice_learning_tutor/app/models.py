@@ -1,4 +1,5 @@
-from datetime import datetime
+
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime, Integer, String, Text
 
@@ -13,4 +14,7 @@ class LearningHistory(Base):
     answer = Column(Text, nullable=False)
     level = Column(String(30), nullable=False)
     language = Column(String(40), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
