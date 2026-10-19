@@ -1,8 +1,160 @@
-
+import re
+from app.services.accuracy_validator import validate_8051_answer
 import httpx
+import time
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "llama3.2:latest"
+
+from dataclasses import dataclass
+@dataclass
+class ExplanationResult:
+    answer: str
+    warnings: list[str]
+    retry_count: int
+
+
+async def generate_explanation_result(
+    question: str,
+    level: str = "beginner",
+    language: str = "English",
+    depth: str = "medium",
+    context: str = ""
+) -> ExplanationResult:
+    if context.strip():
+        source_instructions = f"""
+Use the retrieved textbook passages as evidence.
+Do not invent citations or unsupported textbook claims.
+Distinguish internal RAM, program memory, external memory,
+and SFR address space.
+Treat OCR errors cautiously.
+Explain source conflicts if present.
+
+Classic 8051 accuracy:
+- Internal RAM: 128 bytes.
+- On-chip program ROM: 4 KB; variants differ.
+- Four register banks, eight registers per bank.
+- Timer 0 is T0; Timer 1 is T1.
+- Five interrupt sources: INT0, Timer 0, INT1, Timer 1, serial.
+- SFRs are separate from general-purpose RAM.
+- Harvard architecture has separate code and data spaces.
+
+TEXTBOOK PASSAGES:
+{context}
+"""
+    else:
+        source_instructions = """
+    No textbook passages were retrieved.
+    Textbook verification is unavailable; do not invent citations.
+    """
+
+    prompt = f"""
+    You are a friendly, technically accurate educational tutor.
+
+    Student level: {level}
+    Language: {language}
+    Depth: {depth}
+
+    {source_instructions}
+
+    Question: {question}
+
+    Answer clearly with relevant headings and concise bullet points.
+    Avoid repetition and unsupported claims.
+    Answer in {language}.
+    """
+
+    is_8051_question = bool(
+        re.search(r"\b8051\b", question, re.IGNORECASE)
+    )
+
+
+    async def call_ollama(current_prompt: str) -> str:
+        payload = {
+            "model": OLLAMA_MODEL,
+            "prompt": current_prompt,
+            "stream": False,
+            "options": {"temperature": 0.2},
+        }
+
+        timeout = httpx.Timeout(
+            300.0,
+            connect=5.0,
+            pool=10.0,
+        )
+
+        prompt_chars = len(current_prompt)
+        print(f"LLM prompt size: {prompt_chars:,} characters")
+        request_start = time.perf_counter()
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(OLLAMA_URL, json=payload)
+            response.raise_for_status()
+            data = response.json()
+
+        elapsed = time.perf_counter() - request_start
+        answer_text = data.get("response", "").strip()
+
+        print(f"Ollama request took: {elapsed:.2f}s")
+        print(f"LLM answer size: {len(answer_text):,} characters")
+
+        if not answer_text:
+            raise RuntimeError("Ollama returned an empty answer.")
+
+        return answer_text
+
+
+
+    print("Starting initial generation...")
+    answer = await call_ollama(prompt)
+    print("Initial generation completed.")
+
+    warnings: list[str] = []
+    retry_count = 0
+    max_retries = 2
+
+    if is_8051_question:
+        while True:
+            validation_start = time.perf_counter()
+            issues = validate_8051_answer(answer, question)
+
+            print(
+                f"Validation took: "
+                f"{time.perf_counter() - validation_start:.2f}s"
+            )
+            print("8051 validation issues:", issues)
+
+            if not issues or retry_count >= max_retries:
+                warnings = issues
+                break
+
+            retry_count += 1
+            print(f"Retrying generation ({retry_count}/{max_retries})...")
+
+            retry_prompt = f"""{prompt}
+
+Your previous answer has these technical issues:
+{chr(10).join("- " + issue for issue in issues)}
+
+Rewrite the complete answer. Correct every listed issue.
+Do not repeat incorrect claims. Use the retrieved textbook
+passages as evidence and do not invent citations.
+
+PREVIOUS ANSWER:
+{answer}
+"""
+
+            answer = await call_ollama(retry_prompt)
+
+        if warnings:
+            print("WARNING: Validation issues remain:", warnings)
+
+
+    return ExplanationResult(
+        answer=answer,
+        warnings=warnings,
+        retry_count=retry_count,
+    )
 
 
 async def generate_explanation(
@@ -10,104 +162,13 @@ async def generate_explanation(
     level: str = "beginner",
     language: str = "English",
     depth: str = "medium",
-    context: str = ""
+    context: str = "",
 ) -> str:
-
-    
-    if context.strip():
-        source_instructions = f"""
-        Answer using ONLY the retrieved textbook passages below.
-
-        RETRIEVED TEXTBOOK PASSAGES:
-        {context}
-
-        STRICT RULES:
-        1. Use only facts explicitly supported by these passages.
-        2. Cite claims using the exact labels [Source 1], [Source 2], etc.
-        3. Never invent register sizes, pin counts, memory sizes,
-           chapter numbers, page numbers, or hardware components.
-        4. Preserve the textbook's terminology and meaning.
-        5. If OCR text is incomplete or unclear, do not guess the missing text.
-        6. Do not add general knowledge, applications, limitations,
-           or a conclusion unless the passages support it and it is relevant.
-        7. Do not repeat the same facts in multiple sections.
-        8. Do not claim that all facts are verified unless you have
-           support for each claim in the supplied passages.
-        9. If the passages do not provide enough information, state
-           exactly which information is missing.
-        10. Do not invent details to make the explanation comprehensive.
-        11. Do not repeat a list of hardware components in a separate
-            Key Features section.
-        12. Avoid repeating the same information across sections.
-        13. Do not discuss OCR diagram labels unless the student asks
-            about the block diagram or those labels are relevant.
-        14. Never interpret damaged OCR fragments as confirmed technical
-            terms. If a diagram label is unreadable, say it could not
-            be reliably extracted instead of guessing its meaning.    
-
-        Write a focused explanation with these sections when supported:
-        - CPU and hardware components
-        - Memory organization
-
-        Use only sections relevant to the question.
-        """
-
-    else:
-        source_instructions = """
-    No textbook passages were retrieved.
-    State that textbook verification is unavailable.
-    Do not invent textbook citations.
-    """
-
-
-    prompt = f"""
-You are a friendly and accurate educational tutor.
-
-Explain the student's question clearly at the requested level.
-Use headings, examples, and bullet points when helpful.
-
-Student level: {level}
-Preferred language: {language}
-Explanation depth: {depth}
-
-{source_instructions}
-
-QUESTION:
-{question}
-
-FINAL CHECK:
-- Are the technical claims supported by the cited passages?
-- Are all source labels valid?
-- Have you avoided invented chapter and page numbers?
-- Does the answer contradict any limitation stated in it?
-- Have you separated textbook-supported facts from unverified
-  additional knowledge?
-
-Answer in {language}.
-"""
-
-    payload = {
-        "model": OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False,
-        "options": {
-            "temperature": 0.2
-        }
-    }
-
-    timeout = httpx.Timeout(180.0, connect=5.0)
-
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        response = await client.post(
-            OLLAMA_URL,
-            json=payload
-        )
-        response.raise_for_status()
-        data = response.json()
-
-    answer = data.get("response", "").strip()
-
-    if not answer:
-        raise RuntimeError("Ollama returned an empty answer.")
-
-    return answer
+    result = await generate_explanation_result(
+        question=question,
+        level=level,
+        language=language,
+        depth=depth,
+        context=context,
+    )
+    return result.answer
