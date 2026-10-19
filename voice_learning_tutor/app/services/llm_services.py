@@ -21,48 +21,80 @@ async def generate_explanation_result(
     depth: str = "medium",
     context: str = ""
 ) -> ExplanationResult:
+
     if context.strip():
         source_instructions = f"""
-Use the retrieved textbook passages as evidence.
-Do not invent citations or unsupported textbook claims.
-Distinguish internal RAM, program memory, external memory,
-and SFR address space.
-Treat OCR errors cautiously.
-Explain source conflicts if present.
+TEXTBOOK EVIDENCE AND CITATION RULES
 
-Classic 8051 accuracy:
-- Internal RAM: 128 bytes.
-- On-chip program ROM: 4 KB; variants differ.
-- Four register banks, eight registers per bank.
-- Timer 0 is T0; Timer 1 is T1.
-- Five interrupt sources: INT0, Timer 0, INT1, Timer 1, serial.
-- SFRs are separate from general-purpose RAM.
-- Harvard architecture has separate code and data spaces.
+The retrieved context contains source labels such as [Source 1].
+Use only the source labels that actually appear in that context.
+
+1. Cite textbook-supported factual claims with the relevant label,
+   for example: "The 8051 has 128 bytes of internal RAM [Source 1]."
+2. Place citations immediately after the claim they support.
+3. Cite each distinct claim with the source that supports it.
+4. Do not invent source labels, textbook titles, page numbers,
+   quotations, or references.
+5. Use only facts supported by the retrieved passages when
+   describing what the textbooks say.
+6. If the passages do not establish a fact, say that the retrieved
+   textbooks do not verify it. You may give general background
+   separately, clearly labelled as general knowledge.
+7. Treat OCR errors cautiously. Do not silently treat unclear text
+   as reliable evidence.
+8. If sources conflict, describe the conflict rather than guessing.
+9. Do not cite a source merely because it discusses the same topic;
+   it must support the specific claim.
+10. Keep the answer useful for the student's requested level and depth.
+
+8051 accuracy guidance:
+- Internal RAM: 128 bytes in the classic 8051.
+- On-chip program ROM: 4 KB in the classic 8051; variants differ.
+- Four register banks, with eight registers per bank.
+- Timer 0 uses T0; Timer 1 uses T1.
+- Five interrupt sources in the classic 8051: INT0, Timer 0,
+  INT1, Timer 1, and serial.
+- SFRs are separate from general-purpose internal RAM.
+- Harvard architecture uses separate code and data address spaces.
 
 TEXTBOOK PASSAGES:
 {context}
 """
     else:
         source_instructions = """
-    No textbook passages were retrieved.
-    Textbook verification is unavailable; do not invent citations.
-    """
+TEXTBOOK EVIDENCE STATUS
+
+No textbook passages were retrieved for this question.
+
+- Do not claim that the answer is verified by the user's textbooks.
+- Do not invent source labels, textbook names, page numbers, or quotes.
+- You may answer from general knowledge when reasonably confident.
+- Clearly state when textbook verification is unavailable.
+- If the question requires specific textbook evidence, explain that
+  no supporting passages were found.
+"""
 
     prompt = f"""
-    You are a friendly, technically accurate educational tutor.
+You are a friendly, technically accurate educational tutor.
 
-    Student level: {level}
-    Language: {language}
-    Depth: {depth}
+Student level: {level}
+Language: {language}
+Depth: {depth}
 
-    {source_instructions}
+{source_instructions}
 
-    Question: {question}
+Question: {question}
 
-    Answer clearly with relevant headings and concise bullet points.
-    Avoid repetition and unsupported claims.
-    Answer in {language}.
-    """
+Answer requirements:
+- Answer in {language}.
+- Use clear headings and concise bullet points where useful.
+- Cite textbook-supported claims immediately using [Source N].
+- Use only source labels supplied in the retrieved passages.
+- Never fabricate citations or imply unsupported claims are verified.
+- If evidence is incomplete, clearly explain the limitation.
+- Avoid repetition and distinguish general knowledge from textbook evidence.
+"""
+
 
     is_8051_question = bool(
         re.search(r"\b8051\b", question, re.IGNORECASE)

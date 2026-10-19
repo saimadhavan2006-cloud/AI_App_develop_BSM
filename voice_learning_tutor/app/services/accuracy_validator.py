@@ -18,7 +18,7 @@ def validate_8051_answer(
         issues.append("Use T0 for Timer 0, not TO.")
 
     # Classic 8051 has 128 bytes of internal RAM.
-    
+
     # Classic 8051 has 128 bytes of internal RAM.
     has_internal_ram = bool(
         re.search(
@@ -83,7 +83,7 @@ def validate_8051_answer(
             "Clarify the interrupt-counting convention: the classic 8051 "
             "has five interrupt vectors; serial receive and transmit "
             "conditions may be counted separately."
-        )    
+        )
 
     # Avoid confusing RAM, SFRs, and general-purpose memory.
     if (
@@ -129,32 +129,27 @@ def validate_8051_answer(
             "The classic 8051 has 128 bytes of internal RAM; "
             "do not mislabel 80 bytes as its total general-purpose RAM."
         )
-    
+
+
     # Program Counter is 16-bit.
-    # Preserve original newlines so unrelated claims about the 8-bit CPU
-    # are not combined with statements about the Program Counter.
-    pc_sentences = re.split(r"[\n.!?;]+", answer.lower())
+    # Detect an explicit claim that PC is 8-bit without confusing
+    # "8051 is an 8-bit microcontroller" with the PC width.
+    pc_text = answer.lower()
 
-    for sentence in pc_sentences:
-        mentions_pc = bool(
-            re.search(r"\b(?:pc|program counter)\b", sentence)
-        )
-        claims_8_bit = bool(
-            re.search(r"\b8\s*-?\s*bit\b", sentence)
-        )
-        negates_8_bit = bool(
-            re.search(
-                r"\b(?:not|isn't|never)\s+"
-                r"(?:an?\s+)?8\s*-?\s*bit\b",
-                sentence,
-            )
-        )
+    wrong_pc_patterns = [
+        r"\b(?:program counter|pc)\s*(?:\(\s*pc\s*\))?"
+        r"\s*(?:is|has|of)\s+(?:an?\s+)?8\s*-?\s*bit\b",
+        r"\b8\s*-?\s*bit\s+(?:program counter|pc)\b",
+    ]
 
-        if mentions_pc and claims_8_bit and not negates_8_bit:
+    for pattern in wrong_pc_patterns:
+        if re.search(pattern, pc_text):
             issues.append(
                 "The classic 8051 Program Counter (PC) is 16-bit."
             )
             break
+
+
 
     if re.search(
         r"(?:\bpsw\b|\bprogram status word\b)"
@@ -164,8 +159,8 @@ def validate_8051_answer(
     ):
         issues.append("The classic 8051 PSW (Program Status Word) is 8-bit.")
 
-    
-    
+
+
     # Internal RAM and SFR address-space confusion.
     if re.search(
         r"(?:ram|internal data memory).{0,100}"
@@ -179,7 +174,7 @@ def validate_8051_answer(
         )
 
     # Check RAM layout independently when the question asks about it.
-    
+
     # Validate RAM layout only when the question asks about it.
     ram_layout_question = bool(
         re.search(
@@ -191,16 +186,16 @@ def validate_8051_answer(
     if ram_layout_question:
         required_regions = [
             (
-                r"\bregister banks?\b.*?\b00h\s*[-–—]\s*1fh\b",
-                "The register banks occupy addresses 00H–1FH.",
+                r"\bregister banks?\b.*?\b00h\s*[-â€“â€”]\s*1fh\b",
+                "The register banks occupy addresses 00Hâ€“1FH.",
             ),
             (
-                r"\bbit.addressable ram\b.*?\b20h\s*[-–—]\s*2fh\b",
-                "Bit-addressable RAM occupies addresses 20H–2FH.",
+                r"\bbit.addressable ram\b.*?\b20h\s*[-â€“â€”]\s*2fh\b",
+                "Bit-addressable RAM occupies addresses 20Hâ€“2FH.",
             ),
             (
-                r"\bgeneral.purpose ram\b.*?\b30h\s*[-–—]\s*7fh\b",
-                "General-purpose RAM occupies addresses 30H–7FH.",
+                r"\bgeneral.purpose ram\b.*?\b30h\s*[-â€“â€”]\s*7fh\b",
+                "General-purpose RAM occupies addresses 30Hâ€“7FH.",
             ),
         ]
 
@@ -211,7 +206,7 @@ def validate_8051_answer(
                 )
 
 
-    
+
     # Flag incorrect claims about the 8051's 384-byte memory capacity.
     if re.search(
         r"(?:accommodate|contains|has|provides)\s+"
@@ -240,7 +235,7 @@ def validate_8051_answer(
             "and relevant to the question."
         )
 
-    
+
     # The classic 8051 does not split internal RAM into 64-byte
     # data and 64-byte program-code halves.
     if re.search(
@@ -254,10 +249,10 @@ def validate_8051_answer(
     ):
         issues.append(
             "Incorrect RAM split: classic 8051 internal RAM is "
-            "128 bytes at 00H–7FH, not a 64-byte data/code split."
+            "128 bytes at 00Hâ€“7FH, not a 64-byte data/code split."
         )
 
-    
+
     # Internal RAM must not be described as program-code storage.
     if re.search(
         r"(?:upper|lower)\s+\d+\s+bytes?.{0,100}"
@@ -269,12 +264,12 @@ def validate_8051_answer(
             "Internal RAM stores data, not program code. "
             "Correct the RAM organization."
         )
-    
-    
+
+
     # Stronger classic 8051 internal RAM consistency checks.
     # The three regions are consecutive parts of the same 128-byte RAM.
 
-    compact = re.sub(r"\s+", " ", text).replace("–", "-").replace("—", "-")
+    compact = re.sub(r"\s+", " ", text).replace("â€“", "-").replace("â€”", "-")
 
     ram_is_relevant = bool(
         re.search(r"\b(?:8051|internal ram|ram layout|ram organization)\b", compact)
@@ -314,21 +309,21 @@ def validate_8051_answer(
             (
                 r"\bregister banks?\s+(?:occupy|use|contain|are)\s+"
                 r"(?:16|8)\s+bytes?\b",
-                "The four register banks together occupy 32 bytes (00H–1FH).",
+                "The four register banks together occupy 32 bytes (00Hâ€“1FH).",
             ),
             (
                 r"\bbit.addressable(?: ram)?\s+"
                 r"(?:occupies|uses|contains|is)\s+"
                 r"(?:8|32|80)\s+bytes?\b",
-                "The bit-addressable RAM region occupies 16 bytes (20H–2FH).",
+                "The bit-addressable RAM region occupies 16 bytes (20Hâ€“2FH).",
             ),
             (
                 r"\bgeneral.purpose(?: ram)?\s+"
                 r"(?:occupies|uses|contains|is)\s+"
                 r"(?:16|32|64)\s+bytes?\b",
-                "General-purpose RAM occupies 80 bytes (30H–7FH).",
+                "General-purpose RAM occupies 80 bytes (30Hâ€“7FH).",
             ),
-        ]    
+        ]
 
         for pattern, message in region_size_checks:
             if re.search(pattern, compact):

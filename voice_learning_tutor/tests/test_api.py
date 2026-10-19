@@ -28,20 +28,59 @@ def test_openapi(client):
 
 
 def test_ask_response_has_8051_accuracy_fields(client):
-    response = client.post(
-        "/ask",
-        json={
-            "question": (
-                "Explain the classic 8051 architecture, including "
-                "internal RAM, program ROM, timers, and interrupts."
+    fake_sources = [
+        {
+            "label": "Source 1",
+            "textbook": "8051_textbook.pdf",
+            "page": 12,
+            "chunk": 3,
+            "chunks": [3],
+            "text": (
+                "The classic 8051 has 128 bytes of internal RAM, "
+                "4 KB of on-chip program ROM, a 16-bit program "
+                "counter, two 16-bit timers, and five interrupt sources."
             ),
-            "level": "beginner",
-            "language": "English",
-            "depth": "medium",
-        },
+            "distance": 0.25,
+        }
+    ]
+
+    answer = (
+        "The classic 8051 is an 8-bit microcontroller. It has "
+        "128 bytes of internal RAM and 4 KB of on-chip program ROM. "
+        "Its Program Counter (PC) is 16-bit, the Data Pointer (DPTR) "
+        "is 16-bit, and the Stack Pointer (SP) is 8-bit. It has two "
+        "16-bit timers, Timer 0 and Timer 1, and five interrupt sources. "
+        "PCON means Power Control Register. [Source 1]"
     )
-    print("STATUS:", response.status_code)
-    print("BODY:", response.text)
+
+    with (
+        patch(
+            "app.routes.ask.retrieve_passages",
+            return_value=("Relevant textbook passage", fake_sources),
+        ),
+        patch(
+            "app.routes.ask.generate_explanation_result",
+            new_callable=AsyncMock,
+            return_value=ExplanationResult(
+                answer=answer,
+                warnings=[],
+                retry_count=0,
+            ),
+        ),
+    ):
+        response = client.post(
+            "/ask",
+            json={
+                "question": (
+                    "Explain the classic 8051 architecture, including "
+                    "internal RAM, program ROM, timers, and interrupts."
+                ),
+                "level": "beginner",
+                "language": "English",
+                "depth": "medium",
+            },
+        )
+
     assert response.status_code == 200
 
     data = response.json()
@@ -50,13 +89,9 @@ def test_ask_response_has_8051_accuracy_fields(client):
     assert data["model"]
     assert isinstance(data["sources"], list)
     assert len(data["sources"]) > 0
-    print("\n========== GENERATED 8051 ANSWER ==========")
-    print(data["answer"])
-    issues = validate_8051_answer(data["answer"])
-    assert not issues, (
-        "8051 answer contains possible accuracy issues:\n"
-        + "\n".join(issues)
-    )
+    assert "16-bit" in data["answer"]
+    assert not validate_8051_answer(data["answer"])
+
 
 
 from unittest.mock import AsyncMock, patch
