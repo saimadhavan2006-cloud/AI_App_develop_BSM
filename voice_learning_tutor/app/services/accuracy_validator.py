@@ -129,17 +129,28 @@ def validate_8051_answer(
             "The classic 8051 has 128 bytes of internal RAM; "
             "do not mislabel 80 bytes as its total general-purpose RAM."
         )
-
+    
     # Program Counter is 16-bit.
-    # Check each sentence separately to avoid matching an unrelated
-    # "8-bit CPU" description elsewhere in the answer.
+    # Preserve original newlines so unrelated claims about the 8-bit CPU
+    # are not combined with statements about the Program Counter.
     pc_sentences = re.split(r"[\n.!?;]+", answer.lower())
 
     for sentence in pc_sentences:
-        if (
+        mentions_pc = bool(
             re.search(r"\b(?:pc|program counter)\b", sentence)
-            and re.search(r"\b8\s*[- ]?bit\b", sentence)
-        ):
+        )
+        claims_8_bit = bool(
+            re.search(r"\b8\s*-?\s*bit\b", sentence)
+        )
+        negates_8_bit = bool(
+            re.search(
+                r"\b(?:not|isn't|never)\s+"
+                r"(?:an?\s+)?8\s*-?\s*bit\b",
+                sentence,
+            )
+        )
+
+        if mentions_pc and claims_8_bit and not negates_8_bit:
             issues.append(
                 "The classic 8051 Program Counter (PC) is 16-bit."
             )

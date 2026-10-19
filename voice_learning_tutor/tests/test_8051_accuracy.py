@@ -124,3 +124,10 @@ def test_requires_regions_when_question_asks_for_ram_layout():
         "Explain the internal RAM layout and address map.",
     )
     assert any("RAM layout" in issue for issue in issues)
+
+def test_accepts_correct_16_bit_program_counter():
+    answer = (
+        "The classic 8051 has a 16-bit program counter (PC), not 8-bit."
+    )
+    issues = validate_8051_answer(answer)
+    assert not any("PC) is 16-bit" in issue for issue in issues)

@@ -1,4 +1,6 @@
 
+from urllib import response
+
 from app.services.llm_services import ExplanationResult
 
 import pytest
@@ -39,7 +41,8 @@ def test_ask_response_has_8051_accuracy_fields(client):
             "depth": "medium",
         },
     )
-
+    print("STATUS:", response.status_code)
+    print("BODY:", response.text)
     assert response.status_code == 200
 
     data = response.json()
