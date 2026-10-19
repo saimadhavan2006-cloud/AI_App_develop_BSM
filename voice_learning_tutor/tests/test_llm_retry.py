@@ -60,3 +60,63 @@ async def test_8051_answer_retries_when_validator_finds_issue():
 
     assert result == corrected_answer
     assert client.post.await_count == 2
+
+@pytest.mark.anyio
+async def test_ollama_connection_error():
+    with patch.object(
+        llm_services.httpx,
+        "AsyncClient",
+        side_effect=llm_services.httpx.ConnectError(
+            "Connection refused"
+        ),
+    ):
+        with pytest.raises(llm_services.httpx.ConnectError):
+            await llm_services.generate_explanation(
+                question="Explain the 8051 architecture."
+            )
+
+
+@pytest.mark.anyio
+async def test_ollama_timeout():
+    client = MagicMock()
+    client.__aenter__ = AsyncMock(return_value=client)
+    client.__aexit__ = AsyncMock(return_value=None)
+    client.post = AsyncMock(
+        side_effect=llm_services.httpx.ReadTimeout(
+            "Request timed out"
+        )
+    )
+
+    with patch.object(
+        llm_services.httpx,
+        "AsyncClient",
+        return_value=client,
+    ):
+        with pytest.raises(llm_services.httpx.TimeoutException):
+            await llm_services.generate_explanation(
+                question="Explain the 8051 architecture."
+            )
+
+@pytest.mark.anyio
+async def test_ollama_invalid_json():
+    response = MagicMock()
+    response.raise_for_status.return_value = None
+    response.json.side_effect = ValueError("Invalid JSON")
+
+    client = MagicMock()
+    client.__aenter__ = AsyncMock(return_value=client)
+    client.__aexit__ = AsyncMock(return_value=None)
+    client.post = AsyncMock(return_value=response)
+
+    with patch.object(
+        llm_services.httpx,
+        "AsyncClient",
+        return_value=client,
+    ):
+        with pytest.raises(
+            RuntimeError,
+            match="invalid JSON response",
+        ):
+            await llm_services.generate_explanation(
+                question="Explain the 8051 architecture."
+            )

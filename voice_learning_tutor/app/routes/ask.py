@@ -1,6 +1,5 @@
 
 
-from tracemalloc import start
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -139,6 +138,13 @@ async def ask_tutor(
             status_code=502,
             detail="Ollama returned an error."
         )
+    except RuntimeError as exc:
+        db.rollback()
+        print(f"LLM generation error: {exc}")
+        raise HTTPException(
+            status_code=502,
+            detail="Ollama returned an invalid or empty response.",
+        ) from exc
     except Exception:
         db.rollback()
         raise

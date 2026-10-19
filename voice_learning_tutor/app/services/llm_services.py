@@ -90,7 +90,17 @@ TEXTBOOK PASSAGES:
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(OLLAMA_URL, json=payload)
             response.raise_for_status()
-            data = response.json()
+            try:
+                data = response.json()
+            except ValueError as exc:
+                raise RuntimeError(
+                    "Ollama returned an invalid JSON response."
+                ) from exc
+
+            if not isinstance(data, dict):
+                raise RuntimeError(
+                    "Ollama returned an unexpected response format."
+                )
 
         elapsed = time.perf_counter() - request_start
         answer_text = data.get("response", "").strip()

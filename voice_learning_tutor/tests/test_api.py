@@ -1,11 +1,10 @@
-
-from urllib import response
-
-from app.services.llm_services import ExplanationResult
-
+import httpx
 import pytest
+from unittest.mock import AsyncMock, patch
+
 from fastapi.testclient import TestClient
 from app.main import app
+from app.services.llm_services import ExplanationResult
 from tests.test_8051_accuracy import validate_8051_answer
 
 @pytest.fixture
@@ -118,4 +117,66 @@ def test_ask_returns_citation_metadata(client):
     assert source["chunks"] == [6, 7, 8]
     assert "128 bytes" in source["text"]
     assert source["distance"] == 0.25
+
+def test_ask_returns_503_when_ollama_is_unavailable(client):
+    with patch(
+        "app.routes.ask.retrieve_passages",
+        return_value=("", []),
+    ), patch(
+        "app.routes.ask.generate_explanation_result",
+        new_callable=AsyncMock,
+        side_effect=httpx.ConnectError("Connection refused"),
+    ):
+        response = client.post(
+            "/ask",
+            json={"question": "Explain the 8051 architecture."},
+        )
+
+    assert response.status_code == 503
+    assert "Ollama is unavailable" in response.json()["detail"]
+
+
+def test_ask_returns_504_when_ollama_times_out(client):
+    with patch(
+        "app.routes.ask.retrieve_passages",
+        return_value=("", []),
+    ), patch(
+        "app.routes.ask.generate_explanation_result",
+        new_callable=AsyncMock,
+        side_effect=httpx.ReadTimeout("Request timed out"),
+    ):
+        response = client.post(
+            "/ask",
+            json={"question": "Explain the 8051 architecture."},
+        )
+
+    assert response.status_code == 504
+    assert "too long" in response.json()["detail"]
+
+
+@pytest.mark.parametrize(
+    "error_message",
+    [
+        "Ollama returned an invalid JSON response.",
+        "Ollama returned an empty answer.",
+    ],
+)
+def test_ask_returns_502_for_invalid_or_empty_ollama_response(
+    client, error_message
+):
+    with patch(
+        "app.routes.ask.retrieve_passages",
+        return_value=("", []),
+    ), patch(
+        "app.routes.ask.generate_explanation_result",
+        new_callable=AsyncMock,
+        side_effect=RuntimeError(error_message),
+    ):
+        response = client.post(
+            "/ask",
+            json={"question": "Explain the 8051 architecture."},
+        )
+
+    assert response.status_code == 502
+    assert "invalid or empty response" in response.json()["detail"]
 
